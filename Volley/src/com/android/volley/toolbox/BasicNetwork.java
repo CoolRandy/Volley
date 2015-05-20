@@ -177,7 +177,8 @@ public class BasicNetwork implements Network {
                         throw new ServerError(networkResponse);
                     }
                 } else {
-                    throw new NetworkError(networkResponse);
+//                    throw new NetworkError(networkResponse);
+                	throw new NetworkError(e);
                 }
             }
         }
@@ -225,11 +226,20 @@ public class BasicNetwork implements Network {
         if (entry.etag != null) {
             headers.put("If-None-Match", entry.etag);
         }
-
+        /**
+         * 服务端根据请求时通过If-Modified-Since首部传过来的时间，判断资源文件是否在If-Modified-Since时间 以后 有改动，如果有改动，返回新的请求结果。如果没有改动，返回 304 not modified。
+		   Last-Modified代表了资源文件的最后修改时间。通常使用这个首部构建If-Modified-Since的时间。
+		   Date代表了响应产生的时间，正常情况下Date时间在Last-Modified时间之后。也就是Date>=Last-Modified。
+		       通过以上原理，既然Date>=Last-Modified。那么我利用Date构建，也是完全正确的。	
+		       可能的问题出在服务端的 Http 实现上，如果服务端完全遵守 Http 语义，采用时间比较的方式来验证If-Modified-Since，判断服务器资源文件修改时间是不是在If-Modified-Since之后。那么使用Date完全正确。
+                           可是有的服务端实现不是比较时间，而是直接的判断服务器资源文件修改时间，是否和If-Modified-Since所传时间相等。这样使用Date就不能实现正确的再验证，因为Date的时间总不会和服务器资源文件修改时间相等。
+           注：此处没有再使用服务端响应的Date首部即entry.serverDate,而是改为了使用lastModified首部
+         */
         if (entry.lastModified > 0) {
             Date refTime = new Date(entry.lastModified);
             headers.put("If-Modified-Since", DateUtils.formatDate(refTime));
         }
+        
     }
 
     protected void logError(String what, String url, long start) {

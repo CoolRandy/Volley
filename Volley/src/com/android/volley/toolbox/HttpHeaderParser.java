@@ -26,7 +26,8 @@ import org.apache.http.protocol.HTTP;
 import java.util.Map;
 
 /**
- * Http header 鐨勮В鏋愬伐鍏风被锛屽湪 Volley 涓富瑕佷綔鐢ㄦ槸鐢ㄤ簬瑙ｆ瀽 Header 浠庤?鍒ゆ柇杩斿洖缁撴灉鏄惁闇?缂撳瓨锛屽鏋滈渶瑕佽繑鍥?Header 涓浉鍏充俊鎭? * Utility methods for parsing HTTP headers.
+ * Http header 的解析工具类，在 Volley 中主要作用是用于解析 Header 从而判断返回结果是否需要缓存，如果需要返回 Header 中相关信息
+ * Utility methods for parsing HTTP headers.
  */
 public class HttpHeaderParser {
 
@@ -37,7 +38,14 @@ public class HttpHeaderParser {
      * @return a cache entry for the given response, or null if the response is not cacheable.
      */
     /**
-     * 姣旇緝閲嶈鐨勬柟娉曪紝閫氳繃缃戠粶鍝嶅簲涓殑缂撳瓨鎺у埗 Header 鍜?Body 鍐呭锛屾瀯寤虹紦瀛樺疄浣撱?濡傛灉 Header 鐨?Cache-Control 瀛楁鍚湁no-cache鎴杗o-store琛ㄧず涓嶇紦瀛橈紝杩斿洖 null銆?     (1). 鏍规嵁 Date 棣栭儴锛岃幏鍙栧搷搴旂敓鎴愭椂闂?     (2). 鏍规嵁 ETag 棣栭儴锛岃幏鍙栧搷搴斿疄浣撴爣绛?     (3). 鏍规嵁 Cache锛岰ontrol 鍜?Expires 棣栭儴锛岃绠楀嚭缂撳瓨鐨勮繃鏈熸椂闂达紝鍜岀紦瀛樼殑鏂伴矞搴︽椂闂?     * @param response
+     * 比较重要的方法，通过网络响应中的缓存控制 Header 和 Body 内容，构建缓存实体。如果 Header 的 Cache-Control 字段含有no-cache或no-store表示不缓存，返回 null。
+     (1). 根据 Date 首部，获取响应生成时间
+     (2). 根据 ETag 首部，获取响应实体标签
+     (3). 根据 Cache－Control 和 Expires 首部，计算出缓存的过期时间，和缓存的新鲜度时间
+    	两点说明：
+     1.没有处理Last-Modify首部，而是处理存储了Date首部，并在后续的新鲜度验证时，使用Date来构建If-Modified-Since。 这与 Http 1.1 的语义有些违背。
+	 2.计算过期时间，Cache－Control 首部优先于 Expires 首部。
+     * @param response
      * @return
      */
     public static Cache.Entry parseCacheHeaders(NetworkResponse response) {
@@ -60,7 +68,7 @@ public class HttpHeaderParser {
 
         headerValue = headers.get("Date");
         if (headerValue != null) {
-            serverDate = parseDateAsEpoch(headerValue);
+            serverDate = parseDateAsEpoch(headerValue);//将日期解析为epoch
         }
 
         headerValue = headers.get("Cache-Control");
@@ -69,9 +77,9 @@ public class HttpHeaderParser {
             String[] tokens = headerValue.split(",");
             for (int i = 0; i < tokens.length; i++) {
                 String token = tokens[i].trim();
-                if (token.equals("no-cache") || token.equals("no-store")) {
+                if (token.equals("no-cache") || token.equals("no-store")) {//Header的Cache-Control字段含有no-cache或no-store表示不缓存，return null
                     return null;
-                } else if (token.startsWith("max-age=")) {
+                } else if (token.startsWith("max-age=")) {//在响应中利用max-age缓存控制指令来指定实体的过期时间或由源服务器利用Expires头域指定
                     try {
                         maxAge = Long.parseLong(token.substring(8));
                     } catch (Exception e) {
@@ -101,6 +109,7 @@ public class HttpHeaderParser {
 
         // Cache-Control takes precedence over an Expires header, even if both exist and Expires
         // is more restrictive.
+        //根据Cache-Control和Expires首部来计算缓存的过期时间。如果两个首部都存在情况下，以Cache-Control为准。
         if (hasCacheControl) {
             softExpire = now + maxAge * 1000;
             finalExpire = mustRevalidate
@@ -126,7 +135,7 @@ public class HttpHeaderParser {
 
     /**
      * Parse date in RFC1123 format, and return its value as epoch
-     * 灏?RFC1123 鐨勬椂闂存牸寮忥紝瑙ｆ瀽鎴?epoch 鏃堕棿
+     * 将 RFC1123 的时间格式，解析成 epoch 时间
      */
     public static long parseDateAsEpoch(String dateStr) {
         try {
@@ -166,7 +175,7 @@ public class HttpHeaderParser {
     /**
      * Returns the charset specified in the Content-Type of this header,
      * or the HTTP default (ISO-8859-1) if none can be found.
-     * 瑙ｆ瀽缂栫爜闆嗭紝鍦?Content-Type 棣栭儴涓幏鍙栫紪鐮侀泦锛屽鏋滄病鏈夋壘鍒帮紝榛樿杩斿洖 ISO-8859-1
+     * 解析编码集，在 Content-Type 首部中获取编码集，如果没有找到，默认返回 ISO-8859-1
      */
     public static String parseCharset(Map<String, String> headers) {
         return parseCharset(headers, HTTP.DEFAULT_CONTENT_CHARSET);
