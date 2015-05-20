@@ -1,18 +1,35 @@
 package com.android.volley.volleyTest;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.http.protocol.ResponseConnControl;
+import org.json.JSONObject;
+
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.util.Log;
+import android.widget.TextView;
+
+import com.android.volley.AuthFailureError;
 import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.Response.*;
+import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageLoader;
+import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.NetworkImageView;
+import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.randy.volley.R;
 
 /*Volley是将AsyncHttpClient和Universal-Image-Loader的优点集成于一身的一个框架*/
 public class MainActivity extends Activity {
 
-    @Override
+    @SuppressWarnings("unused")
+	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -58,10 +75,12 @@ public class MainActivity extends Activity {
          3. 将StringRequest对象添加到RequestQueue里面。
          Get
          */
+/*        //有时当我们点击url时需要提交请求参数，为此我们需要重写 getParams()方法,该方法需要以key-value的形式返回参数列表
+        String url = "http://api.androidhive.info/volley/person_object.json";
+        String tag_json_obj = "json_obj_req";
+//        RequestQueue mQueue = Volley.newRequestQueue(MainActivity.this);
 
-       /* RequestQueue mQueue = Volley.newRequestQueue(MainActivity.this);
-
-        StringRequest stringRequest = new StringRequest("http://www.baidu.com",
+        StringRequest stringRequest = new StringRequest(url,
                 new Response.Listener<String>() {
                     @Override
                     public void onResponse(String response) {
@@ -73,31 +92,79 @@ public class MainActivity extends Activity {
                     public void onErrorResponse(VolleyError error) {
                         Log.e("TAG", error.getMessage(), error);
                     }
-                });
-
-        mQueue.add(stringRequest);*/
+                }){
+        	@Override
+        	protected Map<String, String> getParams()
+        			throws AuthFailureError {
+        		Map<String, String> params = new HashMap<String, String>();
+        		params.put("name", "Androidhive");
+                params.put("email", "abc@androidhive.info");
+                params.put("password", "password123");
+        		return params;
+        	}
+        	
+        	*//**
+             * Passing some request headers
+             * *//*
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                HashMap<String, String> headers = new HashMap<String, String>();
+                headers.put("Content-Type", "application/json");
+                headers.put("apiKey", "xxxxxxxxxxxxxxx");
+                return headers;
+            }
+        };
+        AppController.getInstance().addToRequestQueue(stringRequest, tag_json_obj);*/
+//        mQueue.add(stringRequest);
 
         /**
          * 读取json数据
          */
-       /* RequestQueue mQueue = Volley.newRequestQueue(MainActivity.this);
-        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest("http://m.weather.com.cn/data/101010100.html",
-                new Response.Listener<JSONObject>() {
-                    @Override
-                    public void onResponse(JSONObject response) {
-
-                        Log.d("TAG", response.toString());
-                    }
-                },
-                new Response.ErrorListener() {
-                    @Override
-                    public void onErrorResponse(VolleyError error) {
-                        Log.e("TAG", error.getMessage(), error);
-                    }
-                });
-
-        mQueue.add(jsonObjectRequest);*/
-
+    /*    RequestQueue mQueue = Volley.newRequestQueue(MainActivity.this);
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest("http://www.weather.com.cn/data/sk/101010100.html", null,
+        		new Response.Listener<JSONObject>() {
+        			@Override
+        			public void onResponse(JSONObject response) {
+        				Log.d("TAG", response.toString());
+        			}
+        		}, new Response.ErrorListener() {
+        			@Override
+        			public void onErrorResponse(VolleyError error) {
+        				Log.e("TAG", error.getMessage(), error);
+        			}
+        		});
+        
+       mQueue.add(jsonObjectRequest);*/
+        
+        //采用AppController
+       /* String tag_json_obj = "json_obj_req";
+        String url = "http://api.androidhive.info/volley/person_object.json";
+        
+        final TextView textView = (TextView)findViewById(R.id.text);
+        final ProgressDialog pDialog = new ProgressDialog(this);
+        pDialog.setMessage("Loading...");
+        pDialog.show();
+        
+        JsonObjectRequest jsonObjectRequest = new JsonObjectRequest("http://www.weather.com.cn/data/sk/101010100.html", null,
+        		new Response.Listener<JSONObject>() {
+        			@Override
+        			public void onResponse(JSONObject response) {
+        				Log.d("TAG", response.toString());
+        				textView.setText(response.toString());
+        				pDialog.hide();
+        			}
+        		}, new Response.ErrorListener() {
+        			@Override
+        			public void onErrorResponse(VolleyError error) {
+        				Log.e("TAG", error.getMessage(), error);
+        				pDialog.hide();
+        			}
+        		});
+    
+        // Adding request to request queue
+        AppController.getInstance().addToRequestQueue(jsonObjectRequest, tag_json_obj);*/
+        
+        
         /**
          * Universal-Image-Loader具备非常强大的加载网络图片的功能，
          * 而使用Volley，我们也可以实现基本类似的效果，并且在性能上也豪不逊色于Universal-Image-Loader
@@ -169,7 +236,7 @@ public class MainActivity extends Activity {
          * 这也就是布局中设置宽高为200dp的原因，内部会根据这个设置的大小来自动进行压缩
          * 如果不想压缩，则可以将宽高设置为wrap_content即可
          */
-
+/*
         RequestQueue mQueue = Volley.newRequestQueue(MainActivity.this);
         ImageLoader imageLoader = new ImageLoader(mQueue, new ImageLoader.ImageCache() {
             @Override
@@ -187,7 +254,7 @@ public class MainActivity extends Activity {
         networkImageView.setDefaultImageResId(R.drawable.ic_launcher);
         networkImageView.setErrorImageResId(R.drawable.dy);
         networkImageView.setImageUrl("http://img.my.csdn.net/uploads/201404/13/1397393290_5765.jpeg",
-                imageLoader);
+                imageLoader);*/
 
         /**
          * 自定义XmlRequest

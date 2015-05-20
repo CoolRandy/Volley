@@ -29,17 +29,24 @@ import java.net.URLEncoder;
 import java.util.Collections;
 import java.util.Map;
 /**
- * 浠ｈ〃缃戠粶璇锋眰鐨勬娊璞＄被
- * 鎴戜滑閫氳繃鏋勫缓涓?釜Request绫荤殑闈炴娊璞″瓙绫?StringRequest銆丣sonRequest銆両mageRequest鎴栬嚜瀹氫箟)瀵硅薄锛? * 骞跺皢鍏跺姞鍏ュ埌路RequestQueue路涓潵瀹屾垚涓?缃戠粶璇锋眰鎿嶄綔銆? * Volley 鏀寔 8 绉?Http 璇锋眰鏂瑰紡 GET, POST, PUT, DELETE, HEAD, OPTIONS, TRACE, PATCH
- * Request 绫讳腑鍖呭惈浜嗚姹?url锛岃姹傝姹傛柟寮忥紝璇锋眰 Header锛岃姹?Body锛岃姹傜殑浼樺厛绾х瓑淇℃伅銆? * 鐢变簬鏄娊璞＄被锛屾墍浠ュ繀椤婚噸鍐欑殑涓や釜绫伙細
+ * 代表网络请求的抽象类
+ * 我们通过构建一个Request类的非抽象子类(StringRequest、JsonRequest、ImageRequest或自定义)对象，
+ * 并将其加入到·RequestQueue·中来完成一次网络请求操作。
+ * Volley 支持 8 种 Http 请求方式 GET, POST, PUT, DELETE, HEAD, OPTIONS, TRACE, PATCH
+ * Request 类中包含了请求 url，请求请求方式，请求 Header，请求 Body，请求的优先级等信息。
+ * 由于是抽象类，所以必须重写的两个类：
  * abstract protected Response<T> parseNetworkResponse(NetworkResponse response);
- * 瀛愮被閲嶅啓姝ゆ柟娉曪紝灏嗙綉缁滆繑鍥炵殑鍘熺敓瀛楄妭鍐呭锛岃浆鎹㈡垚鍚堥?鐨勭被鍨嬨?姝ゆ柟娉曚細鍦ㄥ伐浣滅嚎绋嬩腑琚皟鐢? * abstract protected void deliverResponse(T response);
- * 瀛愮被閲嶅啓姝ゆ柟娉曪紝灏嗚В鏋愭垚鍚堥?绫诲瀷鐨勫唴瀹逛紶閫掔粰瀹冧滑鐨勭洃鍚洖璋冦?
- * 浠ヤ笅涓や釜鏂规硶涔熺粡甯镐細琚噸鍐?
+ * 子类重写此方法，将网络返回的原生字节内容，转换成合适的类型。此方法会在工作线程中被调用
+ * abstract protected void deliverResponse(T response);
+ * 子类重写此方法，将解析成合适类型的内容传递给它们的监听回调。
+ * 以下两个方法也经常会被重写
+
      public byte[] getBody()
-     閲嶅啓姝ゆ柟娉曪紝鍙互鏋勫缓鐢ㄤ簬 POST銆丳UT銆丳ATCH 璇锋眰鏂瑰紡鐨?Body 鍐呭銆?
+     重写此方法，可以构建用于 POST、PUT、PATCH 请求方式的 Body 内容。
+
      protected Map<String, String> getParams()
-     鍦ㄤ笂闈etBody鍑芥暟娌℃湁琚噸鍐欐儏鍐典笅锛屾鏂规硶鐨勮繑鍥炲?浼氳 key銆乿alue 鍒嗗埆缂栫爜鍚庢嫾瑁呰捣鏉ヨ浆鎹负瀛楄妭鐮佷綔涓?Body 鍐呭銆? */
+     在上面getBody函数没有被重写情况下，此方法的返回值会被 key、value 分别编码后拼装起来转换为字节码作为 Body 内容。
+ */
 /**
  * Base class for all network requests.
  *
